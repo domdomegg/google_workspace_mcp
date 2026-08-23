@@ -6,6 +6,7 @@ Separated from service_decorator.py to avoid circular imports.
 """
 
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
@@ -134,6 +135,18 @@ def has_required_scopes(available_scopes, required_scopes):
 
 # Base OAuth scopes required for user identification
 BASE_SCOPES = [USERINFO_EMAIL_SCOPE, USERINFO_PROFILE_SCOPE, OPENID_SCOPE]
+
+
+def get_extra_scopes() -> list[str]:
+    """Additional OAuth scopes to request, from WORKSPACE_MCP_EXTRA_SCOPES.
+
+    Space- or comma-separated. Lets a deployment grant api_call access to Google
+    APIs that have no dedicated tool (e.g. the Places API behind the
+    cloud-platform scope) without editing the scope maps.
+    """
+    raw = os.getenv("WORKSPACE_MCP_EXTRA_SCOPES", "")
+    return [s for s in raw.replace(",", " ").split() if s]
+
 
 # Minimal scopes required to accept an MCP bearer token at the protocol layer.
 PROTOCOL_AUTH_SCOPES = [USERINFO_EMAIL_SCOPE, OPENID_SCOPE]
@@ -312,6 +325,7 @@ def get_scopes_for_tools(enabled_tools=None):
         if is_permissions_mode():
             scopes = BASE_SCOPES.copy()
             scopes.extend(get_all_permission_scopes())
+            scopes.extend(get_extra_scopes())
             logger.debug(
                 "Generated scopes from granular permissions: %d unique scopes",
                 len(set(scopes)),
@@ -335,6 +349,8 @@ def get_scopes_for_tools(enabled_tools=None):
     for tool in enabled_tools:
         if tool in scope_map:
             scopes.extend(scope_map[tool])
+
+    scopes.extend(get_extra_scopes())
 
     logger.debug(
         f"Generated {mode_str} scopes for tools {list(enabled_tools)}: {len(set(scopes))} unique scopes"

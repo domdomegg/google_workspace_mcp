@@ -229,3 +229,25 @@ class TestGranularPermissionsScopes:
         with_permissions = get_scopes_for_tools(["drive"])
         assert GMAIL_READONLY_SCOPE in with_permissions
         assert DRIVE_READONLY_SCOPE not in with_permissions
+
+
+def test_extra_scopes_env_var_is_added_to_requested_scopes(monkeypatch):
+    """WORKSPACE_MCP_EXTRA_SCOPES lets a deployment request scopes no tool needs,
+    so api_call can reach APIs without a dedicated tool (e.g. Places via
+    cloud-platform). Accepts space- or comma-separated values."""
+    from auth import scopes
+
+    extra = "https://www.googleapis.com/auth/cloud-platform"
+    monkeypatch.setenv("WORKSPACE_MCP_EXTRA_SCOPES", f"{extra}, openid")
+
+    assert scopes.get_extra_scopes() == [extra, "openid"]
+    requested = scopes.get_scopes_for_tools(["search_gmail_messages"])
+    assert extra in requested
+    assert requested.count("openid") == 1  # de-duplicated with BASE_SCOPES
+
+
+def test_extra_scopes_default_empty(monkeypatch):
+    from auth import scopes
+
+    monkeypatch.delenv("WORKSPACE_MCP_EXTRA_SCOPES", raising=False)
+    assert scopes.get_extra_scopes() == []
