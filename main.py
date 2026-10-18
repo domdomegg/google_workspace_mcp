@@ -132,7 +132,7 @@ def resolve_callback_port_for_transport(transport: str) -> None:
 def resolve_bind_host_for_transport(transport: str) -> str:
     """Choose a safe default bind host for the selected transport/auth mode."""
     configured_host = os.getenv("WORKSPACE_MCP_HOST")
-    host = configured_host or "0.0.0.0"
+    host = configured_host or ""  # all IPv4 and IPv6 interfaces
     if transport != "streamable-http":
         return host
 
