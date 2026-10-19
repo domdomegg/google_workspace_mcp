@@ -1,4 +1,6 @@
+import asyncio
 import os
+import socket
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -171,6 +173,23 @@ def test_resolve_bind_host_preserves_oauth21_streamable_http_default(monkeypatch
     monkeypatch.delenv("WORKSPACE_MCP_HOST", raising=False)
 
     assert main.resolve_bind_host_for_transport("streamable-http") == ""
+
+
+@pytest.mark.parametrize(
+    ("family", "address"),
+    [(socket.AF_INET, "0.0.0.0"), (socket.AF_INET6, "::")],
+)
+def test_probe_http_bind_detects_listener_on_either_family(family, address):
+    try:
+        held = socket.create_server((address, 0), family=family)
+    except OSError:
+        pytest.skip(f"{address} unavailable")
+    with held:
+        port = held.getsockname()[1]
+        with pytest.raises(OSError):
+            asyncio.run(main.probe_http_bind("", port))
+
+    asyncio.run(main.probe_http_bind("", port))
 
 
 def test_validate_streamable_http_auth_rejects_unconfigured_oauth21(
