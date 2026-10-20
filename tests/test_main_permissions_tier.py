@@ -161,7 +161,12 @@ def test_resolve_bind_host_preserves_explicit_legacy_streamable_http_host(
     assert main.resolve_bind_host_for_transport("streamable-http") == "0.0.0.0"
 
 
-def test_resolve_bind_host_preserves_oauth21_streamable_http_default(monkeypatch):
+@pytest.mark.parametrize(
+    ("version_info", "expected"), [((3, 11, 0), ""), ((3, 10, 16), "0.0.0.0")]
+)
+def test_resolve_bind_host_preserves_oauth21_streamable_http_default(
+    monkeypatch, version_info, expected
+):
     monkeypatch.setattr(
         main,
         "get_oauth_config",
@@ -171,8 +176,9 @@ def test_resolve_bind_host_preserves_oauth21_streamable_http_default(monkeypatch
         ),
     )
     monkeypatch.delenv("WORKSPACE_MCP_HOST", raising=False)
+    monkeypatch.setattr(sys, "version_info", version_info)
 
-    assert main.resolve_bind_host_for_transport("streamable-http") == ""
+    assert main.resolve_bind_host_for_transport("streamable-http") == expected
 
 
 @pytest.mark.parametrize(

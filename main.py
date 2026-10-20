@@ -170,7 +170,7 @@ def add_startup_notice(message: str) -> None:
 def resolve_bind_host_for_transport(transport: str) -> str:
     """Choose a safe default bind host for the selected transport/auth mode."""
     configured_host = os.getenv("WORKSPACE_MCP_HOST")
-    host = configured_host or ""  # all IPv4 and IPv6 interfaces
+    host = configured_host or ("" if sys.version_info >= (3, 11) else "0.0.0.0")
     if transport != "streamable-http":
         return host
 
